@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>漢字書き取り｜学年・セット選択</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family:
+        'UD デジタル 教科書体 NK',
+        'Hiragino Kaku Gothic ProN',
+        'Yu Gothic',
+        'Meiryo',
+        sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.4em;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      display: inline-block;
+      margin: 6px;
+      padding: 12px 18px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      background: #1976d2;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      background: #555;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    #area {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1 id="title">学年をえらんでください</h1>
+<div id="area"></div>
+
+<script>
+  /* ====== 学年・セット定義 ====== */
+
+  const grades = ["小1","小2","小3","小4","小5","小6","中1","中2","中3"];
+
+  const gradeSetCount = {
+    "小1": 8,
+    "小2": 10,
+    "小3": 10,
+    "小4": 8,
+    "小5": 8,
+    "小6": 6,
+    "中1": 5,
+    "中2": 5,
+    "中3": 5
+  };
+
+  const area = document.getElementById("area");
+  const title = document.getElementById("title");
+
+  /* ====== 初期表示 ====== */
+
+  showGrades();
+
+  /* ====== 学年選択 ====== */
+
+  function showGrades() {
+    title.textContent = "学年をえらんでください";
+    area.innerHTML = "";
+
+    grades.forEach(grade => {
+      const btn = document.createElement("button");
+      btn.textContent = grade;
+      btn.className = "btn";
+      btn.onclick = () => showSets(grade);
+      area.appendChild(btn);
+    });
+  }
+
+  /* ====== セット選択 ====== */
+
+  function showSets(grade) {
+    title.textContent = `${grade}｜セットをえらんでください`;
+    area.innerHTML = "";
+
+    const count = gradeSetCount[grade];
+
+    for (let i = 1; i <= count; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = `セット ${i}`;
+      btn.className = "btn";
+      btn.onclick = () => selectMode(grade, i);
+      area.appendChild(btn);
+    }
+
+    const backBtn = document.createElement("button");
+    backBtn.textContent = "← 学年にもどる";
+    backBtn.className = "btn secondary";
+    backBtn.onclick = showGrades;
+
+    area.appendChild(document.createElement("br"));
+    area.appendChild(backBtn);
+  }
+
+  /* ====== モード選択 → 遷移 ====== */
+
+  function selectMode(grade, setNum) {
+    title.textContent = `${grade} セット${setNum}｜モードをえらんでください`;
+    area.innerHTML = "";
+
+    const fileName = `${grade}_set${setNum}.html`;
+
+    const practiceBtn = document.createElement("button");
+    practiceBtn.textContent = "練習モード";
+    practiceBtn.className = "btn";
+    practiceBtn.onclick = () => {
+      location.href = fileName + "?mode=practice";
+    };
+
+    const examBtn = document.createElement("button");
+    examBtn.textContent = "本番モード";
+    examBtn.className = "btn";
+    examBtn.onclick = () => {
+      location.href = fileName + "?mode=exam";
+    };
+
+    const backBtn = document.createElement("button");
+    backBtn.textContent = "← セットにもどる";
+    backBtn.className = "btn secondary";
+    backBtn.onclick = () => showSets(grade);
+
+    area.appendChild(practiceBtn);
+    area.appendChild(examBtn);
+    area.appendChild(document.createElement("br"));
+    area.appendChild(backBtn);
+  }
+</script>
+
+</body>
+</html>

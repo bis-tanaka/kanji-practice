@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>漢字手書き練習</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  text-align: center;
+  font-family:
+    'UD デジタル 教科書体 NK',
+    'Hiragino Kaku Gothic ProN',
+    'Yu Gothic',
+    'Meiryo',
+    sans-serif;
+}
+
+button {
+  font-size: 18px;
+  margin: 5px;
+  padding: 8px 16px;
+}
+
+#question {
+  font-size: 20px;
+  margin: 15px;
+}
+
+#canvasArea {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+canvas {
+  border: 1px solid black;
+  touch-action: none;
+}
+</style>
+</head>
+<body>
+
+<h2 id="title"></h2>
+<div id="buttons"></div>
+<div id="question"></div>
+<div id="canvasArea"></div>
+
+<script>
+// ======================
+// URL パラメータ取得
+// ======================
+const params = new URLSearchParams(location.search);
+const mode = params.get("mode") ?? "practice";
+const currentGrade = params.get("grade") ?? "小1";
+const currentSet = Number(params.get("set")) || 3;
+
+// ======================
+// データ
+// ======================
+const questions = [
+{ grade: "小1", set: 3, q: "「いつ」つ", a: "五" },
+{ grade: "小1", set: 3, q: "「くち」をあける", a: "口" },
+{ grade: "小1", set: 3, q: "がっ「こう」にいく", a: "校" },
+{ grade: "小1", set: 3, q: "「ひだり」 ", a: "左" },
+{ grade: "小1", set: 3, q: "「みっ」つ", a: "三" },
+{ grade: "小1", set: 3, q: "「やま」 ", a: "山" },
+{ grade: "小1", set: 3, q: "「こ」ども", a: "子" },
+{ grade: "小1", set: 3, q: "「よっ」つ", a: "四" },
+{ grade: "小1", set: 3, q: "ながい「いと」", a: "糸" },
+{ grade: "小1", set: 3, q: "「みみ」をすます", a: "耳" }
+];
+
+// ======================
+// 要素
+// ======================
+const title = document.getElementById("title");
+const buttons = document.getElementById("buttons");
+const questionDiv = document.getElementById("question");
+const canvasArea = document.getElementById("canvasArea");
+
+let list = [];
+let index = 0;
+let canvases = [];
+
+// ======================
+// モード設定
+// ======================
+const PRACTICE_SETTINGS = { random: false, showTrace: true };
+const EXAM_SETTINGS = { random: true, showTrace: false };
+
+function getCurrentSettings() {
+  return mode === "practice" ? PRACTICE_SETTINGS : EXAM_SETTINGS;
+}
+
+// ======================
+// Canvas生成
+// ======================
+function createCanvases(answer) {
+  canvasArea.innerHTML = "";
+  canvases = [];
+
+  // ガイド描画（canvasごとに使う）
+  function drawGuide(ctx, size) {
+    ctx.save();
+    ctx.strokeStyle = "#ccc";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+
+    ctx.beginPath();
+    ctx.moveTo(size / 2, 0);
+    ctx.lineTo(size / 2, size);
+    ctx.moveTo(0, size / 2);
+    ctx.lineTo(size, size / 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  [...answer].forEach(char => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 200;
+    canvas.height = 200;
+    canvasArea.appendChild(canvas);
+
+    const ctx = canvas.getContext("2d");
+
+    // ★ まずガイドを描く
+    drawGuide(ctx, 200);
+
+    // なぞり
+    const settings = getCurrentSettings();
+    if (settings.showTrace) {
+      ctx.fillStyle = "rgba(0,0,0,0.15)";
+      ctx.font =
+        "180px 'UD デジタル 教科書体 NK','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(char, 100, 100);
+    }
+
+    let drawing = false;
+
+    canvas.addEventListener("pointerdown", e => {
+      drawing = true;
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    });
+
+    canvas.addEventListener("pointermove", e => {
+      if (!drawing) return;
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "black";
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+    });
+
+    canvas.addEventListener("pointerup", () => drawing = false);
+    canvas.addEventListener("pointerleave", () => drawing = false);
+
+    canvases.push({ canvas, ctx, char });
+  });
+}
+
+// ======================
+// 出題開始
+// ======================
+function startQuestions() {
+  list = questions.filter(q =>
+    q.grade === currentGrade && q.set === currentSet
+  );
+
+  const settings = getCurrentSettings();
+  if (settings.random) list.sort(() => Math.random() - 0.5);
+
+  if (list.length === 0) {
+    questionDiv.textContent = "このセットには問題がありません";
+    return;
+  }
+
+  index = 0;
+  showQuestion();
+}
+
+// ======================
+// 問題表示
+// ======================
+function showQuestion() {
+  const q = list[index];
+  title.textContent = `${currentGrade} セット${currentSet}`;
+  questionDiv.textContent = q.q;
+
+  createCanvases(q.a);
+
+  buttons.innerHTML = "";
+  const done = document.createElement("button");
+  done.textContent = "できた";
+  done.onclick = showAnswer;
+  buttons.appendChild(done);
+}
+
+// ======================
+// 正解表示
+// ======================
+function showAnswer() {
+  canvases.forEach(c => {
+    c.ctx.fillStyle = "rgba(255,0,0,0.3)";
+    c.ctx.font = "180px 'UD デジタル 教科書体 NK','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif";
+    c.ctx.textAlign = "center";
+    c.ctx.textBaseline = "middle";
+    c.ctx.fillText(c.char, 100, 100);
+  });
+
+  setTimeout(() => {
+    index++;
+    if (index < list.length) {
+      showQuestion();
+    } else {
+      location.href = "index.html";
+    }
+  }, 2500);
+}
+
+startQuestions();
+</script>
+
+</body>
+</html>
